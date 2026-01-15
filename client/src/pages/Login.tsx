@@ -71,6 +71,7 @@ export default function LoginPage() {
                 size="lg" 
                 onClick={handleLogin}
                 className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+                data-testid="button-login"
               >
                 Sign in with Replit
               </Button>

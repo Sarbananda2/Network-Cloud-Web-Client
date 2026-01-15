@@ -108,7 +108,7 @@ export default function DeviceList() {
             {filteredDevices.map((device) => (
               <motion.div key={device.id} variants={item}>
                 <Link href={`/devices/${device.id}`}>
-                  <div className="group cursor-pointer">
+                  <div className="group cursor-pointer" data-testid={`card-device-${device.id}`}>
                     <Card className="h-full p-6 bg-white hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60 transition-all duration-300">
                       <div className="flex justify-between items-start mb-6">
                         <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">

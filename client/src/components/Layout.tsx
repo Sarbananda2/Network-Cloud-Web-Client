@@ -44,6 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               size="sm" 
               onClick={() => logout()}
               className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              data-testid="button-logout"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout

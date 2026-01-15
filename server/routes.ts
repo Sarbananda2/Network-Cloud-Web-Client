@@ -42,6 +42,7 @@ export async function registerRoutes(
           name: "Garage Sensor",
           status: "away"
         });
+        await storage.updateNetworkState(d3.id, "192.168.1.98", true); // last known - away device
         
         // Refresh list
         devices = await storage.getDevices(userId);
@@ -103,47 +104,6 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching network state:", error);
       res.status(500).json({ message: "Internal Server Error" });
-    }
-  });
-
-  // 3. Seed Data Endpoint (For demonstration/dev purposes)
-  // In a real app, this would be triggered by an admin or agent registration
-  app.post("/api/seed-demo-data", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Check if user already has devices
-      const existing = await storage.getDevices(userId);
-      if (existing.length > 0) {
-        return res.json({ message: "Data already seeded", devices: existing });
-      }
-
-      // Create example devices
-      const d1 = await storage.createDevice({
-        userId,
-        name: "Living Room Hub",
-        status: "online"
-      });
-      await storage.updateNetworkState(d1.id, "192.168.1.105", false);
-
-      const d2 = await storage.createDevice({
-        userId,
-        name: "Kitchen Display",
-        status: "offline"
-      });
-      await storage.updateNetworkState(d2.id, "192.168.1.112", true); // last known
-
-       const d3 = await storage.createDevice({
-        userId,
-        name: "Garage Sensor",
-        status: "away"
-      });
-      // No network state for this one yet
-
-      res.json({ message: "Seeded 3 demo devices" });
-    } catch (error) {
-      console.error("Error seeding:", error);
-      res.status(500).json({ message: "Seeding failed" });
     }
   });
 

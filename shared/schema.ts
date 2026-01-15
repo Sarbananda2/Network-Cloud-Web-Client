@@ -20,7 +20,7 @@ export const devices = pgTable("devices", {
 
 export const deviceNetworkStates = pgTable("device_network_states", {
   id: serial("id").primaryKey(),
-  deviceId: integer("device_id").notNull().references(() => devices.id),
+  deviceId: integer("device_id").notNull().references(() => devices.id).unique(), // Unique - one state per device
   ipAddress: text("ip_address"),
   isLastKnown: boolean("is_last_known").default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
