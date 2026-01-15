@@ -4,8 +4,8 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 import { users } from "./models/auth";
 
-// Export users from auth model so it's available here
-export { users } from "./models/auth";
+// Export everything from auth model (users AND sessions tables)
+export * from "./models/auth";
 
 // === TABLE DEFINITIONS ===
 
