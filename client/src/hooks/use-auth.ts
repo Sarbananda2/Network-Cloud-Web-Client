@@ -23,23 +23,29 @@ async function logout(): Promise<void> {
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  const { data: user, isLoading } = useQuery<User | null>({
+  const { data: user, isLoading, fetchStatus } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     queryFn: fetchUser,
     retry: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds - shorter to catch logout state faster
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   const logoutMutation = useMutation({
     mutationFn: logout,
-    onSuccess: () => {
+    onMutate: () => {
+      // Clear auth cache immediately before redirect
       queryClient.setQueryData(["/api/auth/user"], null);
     },
   });
 
+  // Only show loading on initial load, not on background refetches
+  const isInitialLoading = isLoading && fetchStatus === "fetching";
+
   return {
     user,
-    isLoading,
+    isLoading: isInitialLoading,
     isAuthenticated: !!user,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,
