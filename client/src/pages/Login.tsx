@@ -25,10 +25,10 @@ export default function LoginPage() {
             {/* Logo & Branding */}
             <div className="text-center space-y-4">
               <div className="w-14 h-14 bg-primary rounded-xl mx-auto flex items-center justify-center shadow-lg shadow-primary/20">
-                <span className="text-2xl font-bold text-primary-foreground font-display">D</span>
+                <span className="text-2xl font-bold text-primary-foreground font-display">N</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold font-display text-foreground">Welcome to DeviceMonitor</h1>
+                <h1 className="text-2xl font-bold font-display text-foreground">Welcome to NetworkCloud</h1>
                 <p className="text-muted-foreground mt-1">Sign in to access your dashboard</p>
               </div>
             </div>

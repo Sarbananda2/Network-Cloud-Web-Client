@@ -1,8 +1,8 @@
-# DeviceMonitor Web Application
+# NetworkCloud Web Application
 
 ## Overview
 
-DeviceMonitor is a read-only web application for viewing and monitoring network devices. It provides authenticated users with a dashboard to view registered devices, their status (online/offline/away), Wi-Fi IP addresses, and availability timestamps. The application is strictly a display interface—it does not detect network changes, trigger IP fetching, or mutate device state.
+NetworkCloud is a read-only web application for viewing and monitoring network devices. It provides authenticated users with a dashboard to view registered devices, their status (online/offline/away), Wi-Fi IP addresses, and availability timestamps. The application is strictly a display interface—it does not detect network changes, trigger IP fetching, or mutate device state.
 
 ## User Preferences
 
