@@ -1,14 +1,32 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Mail, Lock, Shield } from "lucide-react";
+import { Mail, Lock, Shield, XCircle } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 import logoUrl from "@/assets/logo.png";
+import { useLocation } from "wouter";
 
 export default function LoginPage() {
+  const [location] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const error = searchParams.get("error");
+  
   const handleLogin = () => {
     window.location.href = "/api/login";
   };
+
+  const getErrorMessage = () => {
+    switch (error) {
+      case "access_denied":
+        return "Login was cancelled. You can try again when you're ready.";
+      case "auth_failed":
+        return "Authentication failed. Please try again.";
+      default:
+        return null;
+    }
+  };
+
+  const errorMessage = getErrorMessage();
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-secondary/30 flex flex-col items-center justify-center p-4">
@@ -36,6 +54,17 @@ export default function LoginPage() {
                 <p className="text-muted-foreground mt-1">Sign in to access your dashboard</p>
               </div>
             </div>
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div 
+                className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm"
+                data-testid="alert-login-error"
+              >
+                <XCircle className="w-5 h-5 text-destructive shrink-0" />
+                <span className="text-foreground" data-testid="text-login-error">{errorMessage}</span>
+              </div>
+            )}
 
             {/* Provider Buttons */}
             <div className="space-y-3">
