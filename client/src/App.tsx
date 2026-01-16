@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,6 +7,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import NotFound from "@/pages/not-found";
+
+const getPageTitle = (path: string): string => {
+  if (path === "/login") return "Login | NetworkCloud";
+  if (path === "/devices") return "Dashboard | NetworkCloud";
+  if (path.startsWith("/devices/")) return "Device Details | NetworkCloud";
+  if (path === "/") return "NetworkCloud";
+  return "Page Not Found | NetworkCloud";
+};
 
 // Pages
 import LoginPage from "@/pages/Login";
@@ -34,6 +42,11 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
+
+  // Set page title immediately on route change (before paint)
+  useLayoutEffect(() => {
+    document.title = getPageTitle(location);
+  }, [location]);
 
   // Handle redirect from root after login
   useEffect(() => {

@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
 export default function NotFound() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.title = "Page Not Found | NetworkCloud";
   }, []);
 

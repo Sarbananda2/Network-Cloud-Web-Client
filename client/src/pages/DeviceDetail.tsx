@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import { useRoute } from "wouter";
 import { useDevice, useDeviceNetworkState } from "@/hooks/use-devices";
 import { Layout } from "@/components/Layout";
@@ -17,13 +17,13 @@ export default function DeviceDetail() {
   const { data: device, isLoading: loadingDevice, error: deviceError } = useDevice(id);
   const { data: networkState, isLoading: loadingNetwork } = useDeviceNetworkState(id);
 
-  useEffect(() => {
-    if (device) {
+  useLayoutEffect(() => {
+    if (deviceError) {
+      document.title = "Device Not Found | NetworkCloud";
+    } else if (device) {
       document.title = `${device.name} | NetworkCloud`;
-    } else {
-      document.title = "Device Details | NetworkCloud";
     }
-  }, [device]);
+  }, [device, deviceError]);
 
   if (deviceError) {
     return (
