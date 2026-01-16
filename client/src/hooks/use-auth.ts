@@ -34,10 +34,8 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: logout,
-    onMutate: () => {
-      // Clear auth cache immediately before redirect
-      queryClient.setQueryData(["/api/auth/user"], null);
-    },
+    // Don't clear cache here - let the full page reload after logout handle it
+    // Clearing cache early causes a premature redirect to login before the actual logout completes
   });
 
   // Only show loading on initial load, not on background refetches
