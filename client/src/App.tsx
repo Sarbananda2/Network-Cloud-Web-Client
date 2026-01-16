@@ -1,4 +1,5 @@
-import { Switch, Route, Redirect } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -32,10 +33,22 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
 
-  // Handle redirect from root
-  if (!isLoading && isAuthenticated && window.location.pathname === "/") {
-    return <Redirect to="/devices" />;
+  // Handle redirect from root after login
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && location === "/") {
+      setLocation("/devices");
+    }
+  }, [isLoading, isAuthenticated, location, setLocation]);
+
+  // Show loading while checking auth state on root
+  if (isLoading && location === "/") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
@@ -53,11 +66,8 @@ function Router() {
       </Route>
 
       <Route path="/">
-        {/* If we are here, we are either loading or not authenticated (and redirect logic above handles auth) */}
-        {isLoading ? (
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+        {isAuthenticated ? (
+          <Redirect to="/devices" />
         ) : (
           <Redirect to="/login" />
         )}
