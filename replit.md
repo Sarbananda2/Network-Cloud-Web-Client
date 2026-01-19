@@ -98,3 +98,7 @@ The web app must never:
 - **Dates**: date-fns for timestamp formatting
 - **Styling**: Tailwind CSS, class-variance-authority, clsx, tailwind-merge
 - **Typography**: Google Sans Flex (primary, for modern browsers), Roboto (fallback)
+
+## Documentation
+
+- **Agent API Documentation**: See `docs/AGENT_API.md` for complete API reference, including authentication, endpoints, request/response formats, and Go code examples for building the local agent.
