@@ -12,14 +12,15 @@ const getPageTitle = (path: string): string => {
   if (path === "/login") return "Login | NetworkCloud";
   if (path === "/devices") return "Dashboard | NetworkCloud";
   if (path.startsWith("/devices/")) return "Device Details | NetworkCloud";
+  if (path === "/agent-tokens") return "Agent Tokens | NetworkCloud";
   if (path === "/") return "NetworkCloud";
   return "Page Not Found | NetworkCloud";
 };
 
-// Pages
 import LoginPage from "@/pages/Login";
 import DeviceList from "@/pages/DeviceList";
 import DeviceDetail from "@/pages/DeviceDetail";
+import AgentTokens from "@/pages/AgentTokens";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -76,6 +77,10 @@ function Router() {
       
       <Route path="/devices/:id">
         <ProtectedRoute component={DeviceDetail} />
+      </Route>
+
+      <Route path="/agent-tokens">
+        <ProtectedRoute component={AgentTokens} />
       </Route>
 
       <Route path="/">

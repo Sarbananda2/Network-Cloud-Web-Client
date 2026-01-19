@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Settings, Trash2 } from "lucide-react";
+import { LogOut, User, Settings, Trash2, Key } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -70,6 +70,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/devices">
                 <span className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${location.startsWith('/devices') ? 'text-primary' : 'text-muted-foreground'}`}>
                   Dashboard
+                </span>
+              </Link>
+              <Link href="/agent-tokens">
+                <span className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer flex items-center gap-1.5 ${location === '/agent-tokens' ? 'text-primary' : 'text-muted-foreground'}`}>
+                  <Key className="w-3.5 h-3.5" />
+                  Agent Tokens
                 </span>
               </Link>
             </nav>

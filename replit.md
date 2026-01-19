@@ -19,7 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite with custom Replit plugins for development
 
 The frontend follows a component-based architecture with:
-- Pages in `client/src/pages/` (Login, DeviceList, DeviceDetail)
+- Pages in `client/src/pages/` (Login, DeviceList, DeviceDetail, AgentTokens)
 - Reusable UI components in `client/src/components/ui/` (shadcn/ui)
 - Custom hooks in `client/src/hooks/` for auth and data fetching
 - Protected routes that redirect unauthenticated users to login
@@ -38,16 +38,31 @@ The backend is intentionally minimal—it only serves device data and handles au
 - **Tables**:
   - `users` - User accounts from Replit Auth
   - `sessions` - Session storage for authentication
-  - `devices` - Device registry with name, status, timestamps
+  - `devices` - Device registry with name, status, macAddress, timestamps
   - `device_network_states` - IP addresses and network state per device
+  - `agent_tokens` - API tokens for local agents (SHA-256 hashed)
 
 ### API Contract
 Defined in `shared/routes.ts` using Zod schemas:
+
+**User-facing endpoints (session auth):**
 - `GET /api/auth/user` - Current authenticated user
 - `GET /api/devices` - List user's devices
 - `GET /api/devices/:id` - Single device details
 - `GET /api/devices/:id/network-state` - Device network information
 - `DELETE /api/account` - Permanently delete user account and all associated data
+
+**Agent token management (session auth):**
+- `GET /api/agent-tokens` - List user's agent tokens
+- `POST /api/agent-tokens` - Create new agent token (returns plain token once)
+- `DELETE /api/agent-tokens/:id` - Revoke an agent token
+
+**Agent API (Bearer token auth):**
+- `POST /api/agent/heartbeat` - Agent health check
+- `POST /api/agent/devices` - Register or update device (by MAC)
+- `PATCH /api/agent/devices/:id` - Update device status/name
+- `DELETE /api/agent/devices/:id` - Delete a device
+- `PUT /api/agent/devices/sync` - Bulk sync devices (creates/updates/deletes)
 
 ### Key Constraints
 The web app must never:
