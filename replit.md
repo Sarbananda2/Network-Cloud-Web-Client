@@ -102,3 +102,4 @@ The web app must never:
 ## Documentation
 
 - **Agent API Documentation**: See `docs/AGENT_API.md` for complete API reference, including authentication, endpoints, request/response formats, and Go code examples for building the local agent.
+- **Agent Build Guide**: See `docs/AGENT_BUILD_GUIDE.md` for step-by-step instructions on setting up the local development environment, using Cursor AI to build the Go agent, and deploying it as a Windows Service.
