@@ -9,7 +9,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
-import { Key, Plus, Copy, Check, Trash2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { 
+  Key, Plus, Copy, Check, Trash2, Loader2, ShieldCheck, AlertTriangle, 
+  Clock, Monitor, Wifi, CheckCircle2, XCircle, HelpCircle
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +39,12 @@ interface AgentToken {
   lastUsedAt: string | null;
   createdAt: string;
   revokedAt: string | null;
+  approved: boolean | null;
+  agentMacAddress: string | null;
+  agentHostname: string | null;
+  agentIpAddress: string | null;
+  firstConnectedAt: string | null;
+  lastHeartbeatAt: string | null;
 }
 
 interface NewTokenResponse {
@@ -56,6 +65,7 @@ export default function AgentTokens() {
 
   const { data: tokens, isLoading } = useQuery<AgentToken[]>({
     queryKey: ["/api/agent-tokens"],
+    refetchInterval: 5000, // Poll every 5 seconds to catch new agent connections
   });
 
   const createTokenMutation = useMutation({
@@ -99,6 +109,46 @@ export default function AgentTokens() {
     },
   });
 
+  const approveTokenMutation = useMutation({
+    mutationFn: async (tokenId: number) => {
+      await apiRequest("POST", `/api/agent-tokens/${tokenId}/approve`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Agent approved",
+        description: "The agent can now sync devices to your account.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/agent-tokens"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve agent. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectTokenMutation = useMutation({
+    mutationFn: async (tokenId: number) => {
+      await apiRequest("POST", `/api/agent-tokens/${tokenId}/reject`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Agent rejected",
+        description: "The agent connection has been rejected and reset.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/agent-tokens"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reject agent. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateToken = () => {
     if (!newTokenName.trim()) {
       toast({
@@ -128,8 +178,56 @@ export default function AgentTokens() {
     setCopied(false);
   };
 
+  // Categorize tokens
   const activeTokens = tokens?.filter(t => !t.revokedAt) || [];
   const revokedTokens = tokens?.filter(t => t.revokedAt) || [];
+  
+  // Further categorize active tokens
+  const pendingApproval = activeTokens.filter(t => t.agentMacAddress && !t.approved);
+  const approvedAgents = activeTokens.filter(t => t.approved);
+  const neverConnected = activeTokens.filter(t => !t.agentMacAddress && !t.approved);
+
+  const isRecentlyActive = (lastHeartbeat: string | null) => {
+    if (!lastHeartbeat) return false;
+    const diff = Date.now() - new Date(lastHeartbeat).getTime();
+    return diff < 5 * 60 * 1000; // 5 minutes
+  };
+
+  const AgentDeviceInfo = ({ token }: { token: AgentToken }) => (
+    <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-2">
+      <div className="flex items-center gap-2 text-sm">
+        <Monitor className="w-4 h-4 text-muted-foreground" />
+        <span className="text-muted-foreground">Hostname:</span>
+        <span className="font-medium" data-testid={`text-hostname-${token.id}`}>{token.agentHostname || "Unknown"}</span>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <Key className="w-4 h-4 text-muted-foreground" />
+        <span className="text-muted-foreground">MAC:</span>
+        <code className="text-xs bg-background px-2 py-0.5 rounded font-mono" data-testid={`text-mac-${token.id}`}>
+          {token.agentMacAddress}
+        </code>
+      </div>
+      {token.agentIpAddress && (
+        <div className="flex items-center gap-2 text-sm">
+          <Wifi className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">IP:</span>
+          <span className="font-mono text-sm" data-testid={`text-ip-${token.id}`}>{token.agentIpAddress}</span>
+        </div>
+      )}
+      {token.lastHeartbeatAt && (
+        <div className="flex items-center gap-2 text-sm">
+          <Clock className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Last seen:</span>
+          <span data-testid={`text-lastseen-${token.id}`}>
+            {formatDistanceToNow(new Date(token.lastHeartbeatAt), { addSuffix: true })}
+          </span>
+          {isRecentlyActive(token.lastHeartbeatAt) && (
+            <Badge variant="outline" className="text-green-600 border-green-600 ml-1">Online</Badge>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Layout>
@@ -179,24 +277,151 @@ export default function AgentTokens() {
           </motion.div>
         ) : (
           <div className="space-y-6">
-            {activeTokens.length > 0 && (
+            {/* Pending Approval Section */}
+            {pendingApproval.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <Card className="border-amber-500/50 bg-amber-500/5">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-amber-600">
+                      <AlertTriangle className="w-5 h-5" />
+                      Pending Approval ({pendingApproval.length})
+                    </CardTitle>
+                    <CardDescription>
+                      New agents are waiting for your approval before they can sync devices.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="divide-y divide-border">
+                      {pendingApproval.map((token) => (
+                        <div 
+                          key={token.id} 
+                          className="py-4 first:pt-0 last:pb-0"
+                          data-testid={`row-pending-token-${token.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
+                                  <HelpCircle className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-foreground" data-testid={`text-token-name-${token.id}`}>
+                                    {token.name}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    New device wants to connect
+                                  </p>
+                                </div>
+                              </div>
+                              <AgentDeviceInfo token={token} />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => approveTokenMutation.mutate(token.id)}
+                                disabled={approveTokenMutation.isPending}
+                                data-testid={`button-approve-${token.id}`}
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => rejectTokenMutation.mutate(token.id)}
+                                disabled={rejectTokenMutation.isPending}
+                                className="text-destructive hover:text-destructive"
+                                data-testid={`button-reject-${token.id}`}
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Approved Agents Section */}
+            {approvedAgents.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-primary" />
-                    Active Tokens
+                    <ShieldCheck className="w-5 h-5 text-green-600" />
+                    Approved Agents ({approvedAgents.length})
                   </CardTitle>
                   <CardDescription>
-                    These tokens are currently valid and can be used by agents.
+                    These agents are authorized to sync devices to your account.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="divide-y divide-border">
-                    {activeTokens.map((token) => (
+                    {approvedAgents.map((token) => (
+                      <div 
+                        key={token.id} 
+                        className="py-4 first:pt-0 last:pb-0"
+                        data-testid={`row-approved-token-${token.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-foreground" data-testid={`text-token-name-${token.id}`}>
+                                  {token.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono">
+                                    {token.tokenPrefix}...
+                                  </code>
+                                  <Badge variant="outline" className="text-green-600 border-green-600">Approved</Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <AgentDeviceInfo token={token} />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setTokenToRevoke(token)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            data-testid={`button-revoke-token-${token.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Never Connected Section */}
+            {neverConnected.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="w-5 h-5" />
+                    Waiting for Connection ({neverConnected.length})
+                  </CardTitle>
+                  <CardDescription>
+                    These tokens have been created but no agent has connected yet.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="divide-y divide-border">
+                    {neverConnected.map((token) => (
                       <div 
                         key={token.id} 
                         className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
-                        data-testid={`row-token-${token.id}`}
+                        data-testid={`row-waiting-token-${token.id}`}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3">
@@ -212,11 +437,6 @@ export default function AgentTokens() {
                                 <span className="text-xs text-muted-foreground">
                                   Created {formatDistanceToNow(new Date(token.createdAt), { addSuffix: true })}
                                 </span>
-                                {token.lastUsedAt && (
-                                  <span className="text-xs text-muted-foreground">
-                                    Last used {formatDistanceToNow(new Date(token.lastUsedAt), { addSuffix: true })}
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -237,6 +457,7 @@ export default function AgentTokens() {
               </Card>
             )}
 
+            {/* Revoked Tokens Section */}
             {revokedTokens.length > 0 && (
               <Card className="opacity-60">
                 <CardHeader>
@@ -281,6 +502,7 @@ export default function AgentTokens() {
           </div>
         )}
 
+        {/* Create Token Dialog */}
         <Dialog open={showNewTokenDialog} onOpenChange={setShowNewTokenDialog}>
           <DialogContent>
             <DialogHeader>
@@ -318,6 +540,7 @@ export default function AgentTokens() {
           </DialogContent>
         </Dialog>
 
+        {/* New Token Success Dialog */}
         <Dialog open={!!newToken} onOpenChange={() => handleCloseNewTokenDialog()}>
           <DialogContent>
             <DialogHeader>
@@ -354,6 +577,12 @@ export default function AgentTokens() {
                   </>
                 )}
               </Button>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  <strong>Next steps:</strong> Configure your agent with this token. When the agent connects, 
+                  you'll see a new entry in "Pending Approval" where you can approve or reject it.
+                </p>
+              </div>
             </div>
             <DialogFooter>
               <Button onClick={handleCloseNewTokenDialog} data-testid="button-done-token">
@@ -363,6 +592,7 @@ export default function AgentTokens() {
           </DialogContent>
         </Dialog>
 
+        {/* Revoke Confirmation Dialog */}
         <AlertDialog open={!!tokenToRevoke} onOpenChange={(open) => !open && setTokenToRevoke(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>

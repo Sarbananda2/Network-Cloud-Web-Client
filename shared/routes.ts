@@ -102,6 +102,24 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    approve: {
+      method: 'POST' as const,
+      path: '/api/agent-tokens/:id/approve',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+        401: errorSchemas.unauthorized,
+      },
+    },
+    reject: {
+      method: 'POST' as const,
+      path: '/api/agent-tokens/:id/reject',
+      responses: {
+        200: z.object({ message: z.string() }),
+        404: errorSchemas.notFound,
+        401: errorSchemas.unauthorized,
+      },
+    },
   },
   agent: {
     registerDevice: {
@@ -144,10 +162,16 @@ export const api = {
     heartbeat: {
       method: 'POST' as const,
       path: '/api/agent/heartbeat',
+      body: z.object({
+        macAddress: z.string().regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/),
+        hostname: z.string().min(1),
+        ipAddress: z.string().ip().optional(),
+      }),
       responses: {
         200: z.object({
-          status: z.literal('ok'),
+          status: z.enum(['ok', 'pending_approval', 'device_mismatch']),
           serverTime: z.string(),
+          message: z.string().optional(),
         }),
         401: errorSchemas.unauthorized,
       },

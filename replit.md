@@ -53,12 +53,14 @@ Defined in `shared/routes.ts` using Zod schemas:
 - `DELETE /api/account` - Permanently delete user account and all associated data
 
 **Agent token management (session auth):**
-- `GET /api/agent-tokens` - List user's agent tokens
+- `GET /api/agent-tokens` - List user's agent tokens (with agent connection info)
 - `POST /api/agent-tokens` - Create new agent token (returns plain token once)
 - `DELETE /api/agent-tokens/:id` - Revoke an agent token
+- `POST /api/agent-tokens/:id/approve` - Approve a pending agent connection
+- `POST /api/agent-tokens/:id/reject` - Reject and reset a pending agent connection
 
 **Agent API (Bearer token auth):**
-- `POST /api/agent/heartbeat` - Agent health check
+- `POST /api/agent/heartbeat` - Agent registration and approval check (requires macAddress, hostname)
 - `POST /api/agent/devices` - Register or update device (by MAC)
 - `PATCH /api/agent/devices/:id` - Update device status/name
 - `DELETE /api/agent/devices/:id` - Delete a device

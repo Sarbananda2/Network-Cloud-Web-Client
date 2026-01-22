@@ -40,15 +40,30 @@ Authorization: Bearer nc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
 
 ### Heartbeat
 
-Health check endpoint to verify connectivity and token validity.
+Health check endpoint to verify connectivity, register the agent device, and check approval status.
 
 **Request:**
 ```
 POST /api/agent/heartbeat
 Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "macAddress": "AA:BB:CC:DD:EE:FF",
+  "hostname": "DESKTOP-HOME",
+  "ipAddress": "192.168.1.50"
+}
 ```
 
-**Response (200 OK):**
+**Parameters:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| macAddress | string | Yes | MAC address of the machine running the agent, format `XX:XX:XX:XX:XX:XX` |
+| hostname | string | Yes | Hostname of the machine running the agent |
+| ipAddress | string | No | IP address of the machine running the agent |
+
+**Response (200 OK) - Approved:**
 ```json
 {
   "status": "ok",
@@ -56,7 +71,40 @@ Authorization: Bearer <token>
 }
 ```
 
+**Response (200 OK) - Pending Approval:**
+```json
+{
+  "status": "pending_approval",
+  "serverTime": "2024-01-19T12:00:00.000Z",
+  "message": "Waiting for approval from dashboard user."
+}
+```
+When the agent receives this status, it should continue sending heartbeats but NOT sync devices yet. The user must approve the agent in the web dashboard first.
+
+**Response (200 OK) - Device Mismatch:**
+```json
+{
+  "status": "device_mismatch",
+  "serverTime": "2024-01-19T12:00:00.000Z",
+  "message": "A different device is attempting to use this token. Please check your dashboard."
+}
+```
+This occurs when a different MAC address is detected for an already-connected token. This could indicate:
+- Token was moved to a different computer (legitimate)
+- Token was leaked and used by someone else (security concern)
+
+The agent should log a warning and continue retrying. The user can either approve the new device or revoke the token.
+
+**Status Values:**
+
+| Status | Meaning | Agent Action |
+|--------|---------|--------------|
+| `ok` | Approved and connected | Proceed with device sync |
+| `pending_approval` | First connection, awaiting user approval | Keep heartbeating, don't sync |
+| `device_mismatch` | Different device using same token | Log warning, keep heartbeating |
+
 **Errors:**
+- `400 Bad Request` - Missing or invalid macAddress/hostname
 - `401 Unauthorized` - Invalid or revoked token
 
 ---

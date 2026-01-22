@@ -18,6 +18,13 @@ export const agentTokens = pgTable("agent_tokens", {
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow(),
   revokedAt: timestamp("revoked_at"),
+  // Agent tracking fields
+  approved: boolean("approved").default(false),
+  agentMacAddress: varchar("agent_mac_address", { length: 17 }),
+  agentHostname: text("agent_hostname"),
+  agentIpAddress: text("agent_ip_address"),
+  firstConnectedAt: timestamp("first_connected_at"),
+  lastHeartbeatAt: timestamp("last_heartbeat_at"),
 });
 
 export const agentTokensRelations = relations(agentTokens, ({ one }) => ({
@@ -111,6 +118,12 @@ export const insertAgentTokenSchema = createInsertSchema(agentTokens).omit({
   createdAt: true,
   lastUsedAt: true,
   revokedAt: true,
+  approved: true,
+  agentMacAddress: true,
+  agentHostname: true,
+  agentIpAddress: true,
+  firstConnectedAt: true,
+  lastHeartbeatAt: true,
 });
 
 export type InsertAgentToken = z.infer<typeof insertAgentTokenSchema>;
@@ -122,6 +135,13 @@ export interface AgentTokenResponse {
   lastUsedAt: Date | null;
   createdAt: Date | null;
   revokedAt: Date | null;
+  // Agent tracking fields
+  approved: boolean | null;
+  agentMacAddress: string | null;
+  agentHostname: string | null;
+  agentIpAddress: string | null;
+  firstConnectedAt: Date | null;
+  lastHeartbeatAt: Date | null;
 }
 
 export interface AgentTokenCreateResponse extends AgentTokenResponse {

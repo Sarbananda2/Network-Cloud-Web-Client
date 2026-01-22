@@ -21,6 +21,9 @@ export interface IStorage {
   getAgentTokenByHash(tokenHash: string): Promise<AgentToken | undefined>;
   revokeAgentToken(id: number, userId: string): Promise<boolean>;
   updateAgentTokenLastUsed(id: number): Promise<void>;
+  updateAgentInfo(id: number, macAddress: string, hostname: string, ipAddress: string): Promise<AgentToken | undefined>;
+  approveAgentToken(id: number, userId: string): Promise<boolean>;
+  rejectAgentToken(id: number, userId: string): Promise<boolean>;
   
   // Account management
   deleteAccount(userId: string): Promise<void>;
@@ -127,6 +130,53 @@ export class DatabaseStorage implements IStorage {
     await db.update(agentTokens)
       .set({ lastUsedAt: new Date() })
       .where(eq(agentTokens.id, id));
+  }
+
+  async updateAgentInfo(id: number, macAddress: string, hostname: string, ipAddress: string): Promise<AgentToken | undefined> {
+    const now = new Date();
+    const [token] = await db.select().from(agentTokens).where(eq(agentTokens.id, id));
+    
+    const updates: any = {
+      agentMacAddress: macAddress,
+      agentHostname: hostname,
+      agentIpAddress: ipAddress,
+      lastHeartbeatAt: now,
+    };
+    
+    // Set firstConnectedAt only on first connection
+    if (!token?.firstConnectedAt) {
+      updates.firstConnectedAt = now;
+    }
+    
+    const [updated] = await db.update(agentTokens)
+      .set(updates)
+      .where(eq(agentTokens.id, id))
+      .returning();
+    return updated;
+  }
+
+  async approveAgentToken(id: number, userId: string): Promise<boolean> {
+    const result = await db.update(agentTokens)
+      .set({ approved: true })
+      .where(and(eq(agentTokens.id, id), eq(agentTokens.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async rejectAgentToken(id: number, userId: string): Promise<boolean> {
+    // Rejecting clears the agent info and sets approved to false
+    const result = await db.update(agentTokens)
+      .set({ 
+        approved: false,
+        agentMacAddress: null,
+        agentHostname: null,
+        agentIpAddress: null,
+        firstConnectedAt: null,
+        lastHeartbeatAt: null,
+      })
+      .where(and(eq(agentTokens.id, id), eq(agentTokens.userId, userId)))
+      .returning();
+    return result.length > 0;
   }
 
   async deleteAccount(userId: string): Promise<void> {

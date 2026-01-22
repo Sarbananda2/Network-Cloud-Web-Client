@@ -112,8 +112,17 @@ The agent is the "eyes" on the local network. It:
 3. User downloads/installs the agent on a Windows PC on their network
 4. User configures the agent with their token
 5. User starts the agent (runs as Windows Service)
-6. Agent scans network and reports devices
-7. User views devices in the web dashboard from anywhere
+6. **Agent sends first heartbeat → appears in dashboard as "Pending Approval"**
+7. **User sees agent details (hostname, MAC, IP) and clicks "Approve"**
+8. Agent receives approval → begins syncing devices
+9. User views devices in the web dashboard from anywhere
+
+### Security Flow
+
+- When agent first connects, user must approve it before it can sync devices
+- Dashboard shows: hostname, MAC address, IP of the connecting agent
+- If a different device tries to use the same token → "Device Mismatch" warning
+- User can reject suspicious connections or revoke the token entirely
 
 ---
 
@@ -151,9 +160,13 @@ Token is created in web dashboard and stored in agent's config.yaml.
 ### Heartbeat
 ```
 POST /api/agent/heartbeat
-→ { "status": "ok", "serverTime": "..." }
+← { "macAddress": "AA:BB:CC:DD:EE:FF", "hostname": "DESKTOP-HOME", "ipAddress": "192.168.1.50" }
+→ { "status": "ok" | "pending_approval" | "device_mismatch", "serverTime": "...", "message": "..." }
 ```
-Confirms connectivity and token validity.
+Registers agent identity and checks approval status:
+- `ok` → Approved, proceed with device sync
+- `pending_approval` → Waiting for user to approve in dashboard
+- `device_mismatch` → Different device using this token (security warning)
 
 ### Sync Devices
 ```

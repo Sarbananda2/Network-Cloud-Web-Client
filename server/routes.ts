@@ -118,6 +118,12 @@ export async function registerRoutes(
         lastUsedAt: t.lastUsedAt,
         createdAt: t.createdAt,
         revokedAt: t.revokedAt,
+        approved: t.approved,
+        agentMacAddress: t.agentMacAddress,
+        agentHostname: t.agentHostname,
+        agentIpAddress: t.agentIpAddress,
+        firstConnectedAt: t.firstConnectedAt,
+        lastHeartbeatAt: t.lastHeartbeatAt,
       })));
     } catch (error) {
       console.error("Error fetching agent tokens:", error);
@@ -173,13 +179,105 @@ export async function registerRoutes(
     }
   });
 
+  // === AGENT TOKEN APPROVAL ===
+  
+  app.post(api.agentTokens.approve.path, isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tokenId = parseInt(req.params.id);
+      
+      if (isNaN(tokenId)) {
+        return res.status(400).json({ message: "Invalid token ID" });
+      }
+      
+      const approved = await storage.approveAgentToken(tokenId, userId);
+      
+      if (!approved) {
+        return res.status(404).json({ message: "Token not found" });
+      }
+      
+      res.json({ message: "Agent approved successfully" });
+    } catch (error) {
+      console.error("Error approving agent:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  app.post(api.agentTokens.reject.path, isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tokenId = parseInt(req.params.id);
+      
+      if (isNaN(tokenId)) {
+        return res.status(400).json({ message: "Invalid token ID" });
+      }
+      
+      const rejected = await storage.rejectAgentToken(tokenId, userId);
+      
+      if (!rejected) {
+        return res.status(404).json({ message: "Token not found" });
+      }
+      
+      res.json({ message: "Agent rejected and reset" });
+    } catch (error) {
+      console.error("Error rejecting agent:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
   // === AGENT API (Called by the agent) ===
   
   app.post(api.agent.heartbeat.path, isAgentAuthenticated, async (req: AgentRequest, res) => {
-    res.json({
-      status: "ok",
-      serverTime: new Date().toISOString(),
-    });
+    try {
+      const parseResult = api.agent.heartbeat.body.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ message: "Validation error", errors: parseResult.error.flatten().fieldErrors });
+      }
+      
+      const { macAddress, hostname, ipAddress } = parseResult.data;
+      const tokenId = req.agentTokenId!;
+      const userId = req.agentUserId!;
+      
+      // Get current token state BEFORE updating
+      const tokensBefore = await storage.getAgentTokens(userId);
+      const tokenBefore = tokensBefore.find(t => t.id === tokenId);
+      
+      if (!tokenBefore) {
+        return res.status(401).json({ message: "Token not found" });
+      }
+      
+      // Check if this is a different device trying to use an ALREADY APPROVED token
+      // Only check mismatch for tokens that were previously connected
+      if (tokenBefore.agentMacAddress && tokenBefore.agentMacAddress !== macAddress) {
+        // Different device detected! Alert the user
+        return res.json({
+          status: "device_mismatch",
+          serverTime: new Date().toISOString(),
+          message: "A different device is attempting to use this token. Please check your dashboard.",
+        });
+      }
+      
+      // Update agent info and get fresh token data
+      const updatedToken = await storage.updateAgentInfo(tokenId, macAddress, hostname, ipAddress || "");
+      await storage.updateAgentTokenLastUsed(tokenId);
+      
+      // Use fresh token data for approval check
+      if (!updatedToken?.approved) {
+        return res.json({
+          status: "pending_approval",
+          serverTime: new Date().toISOString(),
+          message: "Waiting for approval from dashboard user.",
+        });
+      }
+      
+      res.json({
+        status: "ok",
+        serverTime: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error processing heartbeat:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
   });
 
   app.post(api.agent.registerDevice.path, isAgentAuthenticated, async (req: AgentRequest, res) => {
