@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import cors from "cors";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { api } from "@shared/routes";
@@ -226,6 +227,16 @@ export async function registerRoutes(
   });
 
   // === AGENT API (Called by the agent) ===
+  
+  // Enable CORS for all agent API endpoints
+  // This allows the Agent Simulator (and any external client) to call these endpoints
+  // Security is handled by Bearer token authentication, not origin restrictions
+  const agentCorsOptions = {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  };
+  app.use("/api/agent", cors(agentCorsOptions));
   
   app.post(api.agent.heartbeat.path, isAgentAuthenticated, async (req: AgentRequest, res) => {
     try {
