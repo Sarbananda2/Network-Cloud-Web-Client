@@ -11,7 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { 
   Key, Plus, Copy, Check, Trash2, Loader2, ShieldCheck, AlertTriangle, 
-  Clock, Monitor, Wifi, CheckCircle2, XCircle, HelpCircle
+  Clock, Monitor, Wifi, CheckCircle2, XCircle, HelpCircle, Fingerprint
 } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +40,7 @@ interface AgentToken {
   createdAt: string;
   revokedAt: string | null;
   approved: boolean | null;
+  agentUuid: string | null;
   agentMacAddress: string | null;
   agentHostname: string | null;
   agentIpAddress: string | null;
@@ -195,6 +196,15 @@ export default function AgentTokens() {
 
   const AgentDeviceInfo = ({ token }: { token: AgentToken }) => (
     <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-2">
+      {token.agentUuid && (
+        <div className="flex items-center gap-2 text-sm">
+          <Fingerprint className="w-4 h-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Agent ID:</span>
+          <code className="text-xs bg-background px-2 py-0.5 rounded font-mono" data-testid={`text-uuid-${token.id}`}>
+            {token.agentUuid}
+          </code>
+        </div>
+      )}
       <div className="flex items-center gap-2 text-sm">
         <Monitor className="w-4 h-4 text-muted-foreground" />
         <span className="text-muted-foreground">Hostname:</span>

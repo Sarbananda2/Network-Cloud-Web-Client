@@ -20,6 +20,7 @@ export const agentTokens = pgTable("agent_tokens", {
   revokedAt: timestamp("revoked_at"),
   // Agent tracking fields
   approved: boolean("approved").default(false),
+  agentUuid: varchar("agent_uuid", { length: 36 }),
   agentMacAddress: varchar("agent_mac_address", { length: 17 }),
   agentHostname: text("agent_hostname"),
   agentIpAddress: text("agent_ip_address"),
@@ -119,6 +120,7 @@ export const insertAgentTokenSchema = createInsertSchema(agentTokens).omit({
   lastUsedAt: true,
   revokedAt: true,
   approved: true,
+  agentUuid: true,
   agentMacAddress: true,
   agentHostname: true,
   agentIpAddress: true,
@@ -137,6 +139,7 @@ export interface AgentTokenResponse {
   revokedAt: Date | null;
   // Agent tracking fields
   approved: boolean | null;
+  agentUuid: string | null;
   agentMacAddress: string | null;
   agentHostname: string | null;
   agentIpAddress: string | null;

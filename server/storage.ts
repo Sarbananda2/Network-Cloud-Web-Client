@@ -21,7 +21,7 @@ export interface IStorage {
   getAgentTokenByHash(tokenHash: string): Promise<AgentToken | undefined>;
   revokeAgentToken(id: number, userId: string): Promise<boolean>;
   updateAgentTokenLastUsed(id: number): Promise<void>;
-  updateAgentInfo(id: number, macAddress: string, hostname: string, ipAddress: string): Promise<AgentToken | undefined>;
+  updateAgentInfo(id: number, agentUuid: string, macAddress: string, hostname: string, ipAddress: string): Promise<AgentToken | undefined>;
   approveAgentToken(id: number, userId: string): Promise<boolean>;
   rejectAgentToken(id: number, userId: string): Promise<boolean>;
   
@@ -132,11 +132,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(agentTokens.id, id));
   }
 
-  async updateAgentInfo(id: number, macAddress: string, hostname: string, ipAddress: string): Promise<AgentToken | undefined> {
+  async updateAgentInfo(id: number, agentUuid: string, macAddress: string, hostname: string, ipAddress: string): Promise<AgentToken | undefined> {
     const now = new Date();
     const [token] = await db.select().from(agentTokens).where(eq(agentTokens.id, id));
     
     const updates: any = {
+      agentUuid: agentUuid,
       agentMacAddress: macAddress,
       agentHostname: hostname,
       agentIpAddress: ipAddress,
@@ -168,6 +169,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(agentTokens)
       .set({ 
         approved: false,
+        agentUuid: null,
         agentMacAddress: null,
         agentHostname: null,
         agentIpAddress: null,

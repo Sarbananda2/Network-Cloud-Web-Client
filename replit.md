@@ -60,7 +60,7 @@ Defined in `shared/routes.ts` using Zod schemas:
 - `POST /api/agent-tokens/:id/reject` - Reject and reset a pending agent connection
 
 **Agent API (Bearer token auth):**
-- `POST /api/agent/heartbeat` - Agent registration and approval check (requires macAddress, hostname)
+- `POST /api/agent/heartbeat` - Agent registration and approval check (requires agentUuid, macAddress, hostname)
 - `POST /api/agent/devices` - Register or update device (by MAC)
 - `PATCH /api/agent/devices/:id` - Update device status/name
 - `DELETE /api/agent/devices/:id` - Delete a device

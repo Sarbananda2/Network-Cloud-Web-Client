@@ -245,7 +245,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Validation error", errors: parseResult.error.flatten().fieldErrors });
       }
       
-      const { macAddress, hostname, ipAddress } = parseResult.data;
+      const { agentUuid, macAddress, hostname, ipAddress } = parseResult.data;
       const tokenId = req.agentTokenId!;
       const userId = req.agentUserId!;
       
@@ -257,19 +257,19 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Token not found" });
       }
       
-      // Check if this is a different device trying to use an ALREADY APPROVED token
-      // Only check mismatch for tokens that were previously connected
-      if (tokenBefore.agentMacAddress && tokenBefore.agentMacAddress !== macAddress) {
-        // Different device detected! Alert the user
+      // Check if this is a different agent trying to use an ALREADY CONNECTED token
+      // Use UUID for mismatch detection (more reliable than MAC)
+      if (tokenBefore.agentUuid && tokenBefore.agentUuid !== agentUuid) {
+        // Different agent detected! Alert the user
         return res.json({
           status: "device_mismatch",
           serverTime: new Date().toISOString(),
-          message: "A different device is attempting to use this token. Please check your dashboard.",
+          message: "A different agent is attempting to use this token. Please check your dashboard.",
         });
       }
       
       // Update agent info and get fresh token data
-      const updatedToken = await storage.updateAgentInfo(tokenId, macAddress, hostname, ipAddress || "");
+      const updatedToken = await storage.updateAgentInfo(tokenId, agentUuid, macAddress, hostname, ipAddress || "");
       await storage.updateAgentTokenLastUsed(tokenId);
       
       // Use fresh token data for approval check

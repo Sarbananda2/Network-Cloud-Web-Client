@@ -49,6 +49,7 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
+  "agentUuid": "550e8400-e29b-41d4-a716-446655440000",
   "macAddress": "AA:BB:CC:DD:EE:FF",
   "hostname": "DESKTOP-HOME",
   "ipAddress": "192.168.1.50"
@@ -59,6 +60,7 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| agentUuid | string | Yes | Unique identifier for the agent (UUID v4), generated on first install and persisted |
 | macAddress | string | Yes | MAC address of the machine running the agent, format `XX:XX:XX:XX:XX:XX` |
 | hostname | string | Yes | Hostname of the machine running the agent |
 | ipAddress | string | No | IP address of the machine running the agent |
@@ -81,19 +83,19 @@ Content-Type: application/json
 ```
 When the agent receives this status, it should continue sending heartbeats but NOT sync devices yet. The user must approve the agent in the web dashboard first.
 
-**Response (200 OK) - Device Mismatch:**
+**Response (200 OK) - Agent Mismatch:**
 ```json
 {
   "status": "device_mismatch",
   "serverTime": "2024-01-19T12:00:00.000Z",
-  "message": "A different device is attempting to use this token. Please check your dashboard."
+  "message": "A different agent is attempting to use this token. Please check your dashboard."
 }
 ```
-This occurs when a different MAC address is detected for an already-connected token. This could indicate:
-- Token was moved to a different computer (legitimate)
+This occurs when a different agent UUID is detected for an already-connected token. This could indicate:
+- Token was moved to a different agent installation (legitimate)
 - Token was leaked and used by someone else (security concern)
 
-The agent should log a warning and continue retrying. The user can either approve the new device or revoke the token.
+The agent should log a warning and continue retrying. The user can either approve the new agent or revoke the token.
 
 **Status Values:**
 
@@ -104,7 +106,7 @@ The agent should log a warning and continue retrying. The user can either approv
 | `device_mismatch` | Different device using same token | Log warning, keep heartbeating |
 
 **Errors:**
-- `400 Bad Request` - Missing or invalid macAddress/hostname
+- `400 Bad Request` - Missing or invalid agentUuid/macAddress/hostname
 - `401 Unauthorized` - Invalid or revoked token
 
 ---
@@ -426,26 +428,57 @@ func syncDevices(baseURL, token string, devices []Device) (*SyncResponse, error)
     return &result, nil
 }
 
-func heartbeat(baseURL, token string) error {
-    req, err := http.NewRequest("POST", baseURL+"/api/agent/heartbeat", nil)
+type HeartbeatRequest struct {
+    AgentUUID  string `json:"agentUuid"`
+    MACAddress string `json:"macAddress"`
+    Hostname   string `json:"hostname"`
+    IPAddress  string `json:"ipAddress,omitempty"`
+}
+
+type HeartbeatResponse struct {
+    Status     string `json:"status"`
+    ServerTime string `json:"serverTime"`
+    Message    string `json:"message,omitempty"`
+}
+
+func heartbeat(baseURL, token string, agentUUID, macAddress, hostname, ipAddress string) (*HeartbeatResponse, error) {
+    body := HeartbeatRequest{
+        AgentUUID:  agentUUID,
+        MACAddress: macAddress,
+        Hostname:   hostname,
+        IPAddress:  ipAddress,
+    }
+    
+    jsonBody, err := json.Marshal(body)
     if err != nil {
-        return err
+        return nil, err
+    }
+    
+    req, err := http.NewRequest("POST", baseURL+"/api/agent/heartbeat", bytes.NewBuffer(jsonBody))
+    if err != nil {
+        return nil, err
     }
 
     req.Header.Set("Authorization", "Bearer "+token)
+    req.Header.Set("Content-Type", "application/json")
 
     client := &http.Client{Timeout: 10 * time.Second}
     resp, err := client.Do(req)
     if err != nil {
-        return err
+        return nil, err
     }
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        return fmt.Errorf("heartbeat failed with status: %d", resp.StatusCode)
+        return nil, fmt.Errorf("heartbeat failed with status: %d", resp.StatusCode)
     }
 
-    return nil
+    var result HeartbeatResponse
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return nil, err
+    }
+
+    return &result, nil
 }
 ```
 
@@ -461,6 +494,11 @@ Currently no rate limits are enforced, but please be reasonable:
 ---
 
 ## Changelog
+
+**v1.1.0** (January 2026)
+- Added UUID-based agent identity (agentUuid field in heartbeat)
+- Agent mismatch detection now uses UUID instead of MAC address
+- Improved security with stable agent identification
 
 **v1.0.0** (January 2024)
 - Initial release
