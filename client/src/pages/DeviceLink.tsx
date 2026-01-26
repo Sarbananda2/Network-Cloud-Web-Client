@@ -58,7 +58,7 @@ export default function DeviceLinkPage() {
         if (data.error === "invalid_code") {
           setErrorMessage("Code not found. Please check and try again.");
         } else if (data.error === "expired_code") {
-          setErrorMessage("This code has expired. Please request a new code from your agent.");
+          setErrorMessage("This code has expired. Please request a new code from the app.");
         } else if (data.error === "code_used") {
           setErrorMessage("This code has already been used.");
         } else {
@@ -158,8 +158,8 @@ export default function DeviceLinkPage() {
                   className="space-y-6"
                 >
                   <div className="text-center">
-                    <h1 className="text-xl font-bold font-display text-foreground">Link a Device</h1>
-                    <p className="text-muted-foreground mt-1 text-sm">Enter the code shown in your agent</p>
+                    <h1 className="text-xl font-bold font-display text-foreground">Add a New Device</h1>
+                    <p className="text-muted-foreground mt-1 text-sm">Enter the code shown in the NetworkCloud app</p>
                   </div>
 
                   <div className="space-y-4">
@@ -273,9 +273,9 @@ export default function DeviceLinkPage() {
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold font-display text-foreground">Device Linked</h1>
+                    <h1 className="text-xl font-bold font-display text-foreground">Device Connected</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                      Your agent is now connected to your account. You can close this page.
+                      Your device is now connected. It will appear on your dashboard shortly.
                     </p>
                   </div>
                   <Button
@@ -312,7 +312,7 @@ export default function DeviceLinkPage() {
                     data-testid="button-link-another"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Link Another Device
+                    Add Another Device
                   </Button>
                 </motion.div>
               )}

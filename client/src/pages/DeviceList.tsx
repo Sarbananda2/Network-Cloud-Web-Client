@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useDevices } from "@/hooks/use-devices";
 import { Layout } from "@/components/Layout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
-import { Laptop, Smartphone, Server, Search, WifiOff, Wifi, Monitor } from "lucide-react";
+import { Laptop, Smartphone, Server, Search, WifiOff, Monitor, Plus, Link2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DeviceList() {
   const { data: devices, isLoading, error } = useDevices();
   const [search, setSearch] = useState("");
+  const [, setLocation] = useLocation();
 
   const filteredDevices = devices?.filter(d => 
     d.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -68,15 +70,27 @@ export default function DeviceList() {
             <p className="text-muted-foreground">Overview of all connected devices and their current status.</p>
           </div>
           
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search devices..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white border-border/60 focus:bg-white transition-all shadow-sm"
-              data-testid="input-search-devices"
-            />
+          <div className="flex items-center gap-3">
+            {devices && devices.length > 0 && (
+              <Button
+                onClick={() => setLocation("/link")}
+                className="shrink-0"
+                data-testid="button-add-device"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add a new device
+              </Button>
+            )}
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search devices..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 bg-white border-border/60 focus:bg-white transition-all shadow-sm"
+                data-testid="input-search-devices"
+              />
+            </div>
           </div>
         </div>
 
@@ -111,31 +125,37 @@ export default function DeviceList() {
               <Monitor className="w-10 h-10 text-primary" />
             </div>
             <h2 className="text-2xl font-display font-bold text-foreground mb-3 text-center" data-testid="text-empty-state-heading">
-              No devices yet
+              Your Network Dashboard
             </h2>
-            <p className="text-muted-foreground text-center max-w-md mb-6" data-testid="text-empty-state-description">
-              Your dashboard is ready and waiting. Devices will appear here automatically once your local NetworkCloud agent registers them on your network.
+            <p className="text-muted-foreground text-center max-w-md mb-8" data-testid="text-empty-state-description">
+              No devices connected yet. Get started by downloading the NetworkCloud app on any computer in your network.
             </p>
-            <div className="bg-secondary/50 rounded-xl p-6 max-w-md w-full" data-testid="container-getting-started">
-              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2" data-testid="text-getting-started-heading">
-                <Wifi className="w-4 h-4 text-primary" />
-                Getting Started
+            
+            <Card className="bg-secondary/30 border-border/40 p-6 max-w-md w-full mb-6" data-testid="container-getting-started">
+              <h3 className="font-semibold text-foreground mb-4 text-center" data-testid="text-getting-started-heading">
+                Get started in 2 easy steps
               </h3>
-              <ul className="space-y-2 text-sm text-muted-foreground" data-testid="list-getting-started-steps">
-                <li className="flex items-start gap-2" data-testid="row-getting-started-1">
-                  <span className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">1</span>
-                  <span data-testid="text-getting-started-step-1">Install the NetworkCloud agent on your local machine</span>
+              <ul className="space-y-3 text-sm" data-testid="list-getting-started-steps">
+                <li className="flex items-start gap-3" data-testid="row-getting-started-1">
+                  <span className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary shrink-0">1</span>
+                  <span className="text-foreground" data-testid="text-getting-started-step-1">Download the NetworkCloud app on any computer in your network</span>
                 </li>
-                <li className="flex items-start gap-2" data-testid="row-getting-started-2">
-                  <span className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">2</span>
-                  <span data-testid="text-getting-started-step-2">Configure the agent with your network settings</span>
-                </li>
-                <li className="flex items-start gap-2" data-testid="row-getting-started-3">
-                  <span className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">3</span>
-                  <span data-testid="text-getting-started-step-3">Devices will appear here as they're detected</span>
+                <li className="flex items-start gap-3" data-testid="row-getting-started-2">
+                  <span className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-bold text-primary shrink-0">2</span>
+                  <span className="text-foreground" data-testid="text-getting-started-step-2">Enter the code shown in the app to connect your network</span>
                 </li>
               </ul>
-            </div>
+            </Card>
+
+            <Button
+              size="lg"
+              onClick={() => setLocation("/link")}
+              className="gap-2"
+              data-testid="button-add-device-empty"
+            >
+              <Link2 className="w-4 h-4" />
+              Add a new device
+            </Button>
           </motion.div>
         )}
 
