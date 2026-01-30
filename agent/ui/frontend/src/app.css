@@ -602,7 +602,7 @@ pre {
 
 .adapter-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--adapter-card-width, 260px), 1fr));
     gap: 16px;
 }
 
@@ -616,6 +616,7 @@ pre {
     flex-direction: column;
     gap: 12px;
     transition: transform 0.15s ease, border 0.15s ease;
+    height: var(--adapter-card-height, auto);
 }
 
 .adapter-card.expanded {
@@ -630,7 +631,7 @@ pre {
 
 .adapter-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
 }
@@ -678,6 +679,7 @@ pre {
     padding: 4px 10px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.1);
+    margin-top: 2px;
 }
 
 .adapter-state.online {

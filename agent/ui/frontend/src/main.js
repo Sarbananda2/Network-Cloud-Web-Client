@@ -648,6 +648,55 @@ function updateDashboardNetwork(resp) {
   }
 }
 
+function updateAdapterCardSizing(adapters) {
+  if (!networkListEl) {
+    return;
+  }
+  if (!Array.isArray(adapters) || adapters.length === 0) {
+    networkListEl.style.removeProperty('--adapter-card-width');
+    networkListEl.style.removeProperty('--adapter-card-height');
+    return;
+  }
+  const containerWidth = networkListEl.clientWidth;
+  if (!containerWidth) {
+    return;
+  }
+
+  const measureHost = document.createElement('div');
+  measureHost.className = 'adapter-grid';
+  measureHost.style.position = 'absolute';
+  measureHost.style.visibility = 'hidden';
+  measureHost.style.pointerEvents = 'none';
+  measureHost.style.height = 'auto';
+  measureHost.style.width = `${containerWidth}px`;
+  measureHost.style.left = '-99999px';
+  measureHost.style.top = '0';
+  measureHost.innerHTML = adapters
+    .slice()
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))
+    .map((adapter) => renderAdapterCard(adapter, adapterKey(adapter)))
+    .join('');
+
+  document.body.appendChild(measureHost);
+  const cards = measureHost.querySelectorAll('.adapter-card');
+  let maxWidth = 0;
+  let maxHeight = 0;
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    maxWidth = Math.max(maxWidth, rect.width);
+    maxHeight = Math.max(maxHeight, rect.height);
+  });
+  document.body.removeChild(measureHost);
+
+  if (maxWidth > 0) {
+    const clampedWidth = Math.min(Math.ceil(maxWidth), containerWidth);
+    networkListEl.style.setProperty('--adapter-card-width', `${clampedWidth}px`);
+  }
+  if (maxHeight > 0) {
+    networkListEl.style.setProperty('--adapter-card-height', `${Math.ceil(maxHeight)}px`);
+  }
+}
+
 function renderNetwork(resp) {
   if (!resp) {
     return;
@@ -720,6 +769,7 @@ function renderNetwork(resp) {
   networkListEl.innerHTML = filteredAdapters
     .map((adapter) => renderAdapterCard(adapter, adapterKey(adapter)))
     .join('');
+  updateAdapterCardSizing(allAdapters);
 
   networkListEl.querySelectorAll('.adapter-card').forEach((card) => {
     card.addEventListener('click', () => {
@@ -918,6 +968,12 @@ networkFilterButtons.forEach((button) => {
     activeNetworkFilter = button.dataset.filter || 'all';
     renderNetwork(lastNetworkResponse);
   });
+});
+
+window.addEventListener('resize', () => {
+  if (lastNetworkResponse && lastNetworkResponse.adapters) {
+    updateAdapterCardSizing(lastNetworkResponse.adapters);
+  }
 });
 
 refreshStatus();
