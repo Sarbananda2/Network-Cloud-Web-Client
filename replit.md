@@ -29,8 +29,16 @@ The frontend follows a component-based architecture with:
 - **API Pattern**: RESTful JSON API under `/api/*` routes
 - **Authentication**: Replit Auth via OpenID Connect with Passport.js
 - **Session Management**: PostgreSQL-backed sessions via `connect-pg-simple`
+- **Real-time Updates**: WebSocket server for instant device notifications
 
 The backend is intentionally minimal—it only serves device data and handles authentication. All device state mutations happen externally (via a local agent not part of this codebase).
+
+### Real-time Updates (WebSocket)
+- **Path**: `/ws` (WebSocket upgrade endpoint)
+- **Authentication**: Session-based (validates `connect.sid` cookie against PostgreSQL session store)
+- **Events**: `devices_updated` - sent when any device is created, updated, or deleted
+- **Security**: Connections without valid session are rejected (close code 1008)
+- **Frontend Hook**: `useDeviceWebSocket()` in `client/src/hooks/use-websocket.ts` - auto-reconnects and invalidates React Query cache on updates
 
 ### Data Storage
 - **Database**: PostgreSQL with Drizzle ORM
